@@ -119,6 +119,7 @@ def compute_avg_track_iou(dt_track, gt_track):
 
 
 class TaoEval:
+
     def __init__(self,
                  tao_gt,
                  tao_dt,
@@ -180,11 +181,11 @@ class TaoEval:
         cat_ids = self.params.cat_ids if self.params.cat_ids else None
 
         gt_anns = self.tao_gt.load_anns(
-            self.tao_gt.get_ann_ids(vid_ids=self.params.vid_ids,
-                                    cat_ids=cat_ids))
+            self.tao_gt.get_ann_ids(
+                vid_ids=self.params.vid_ids, cat_ids=cat_ids))
         dt_anns = self.tao_dt.load_anns(
-            self.tao_dt.get_ann_ids(vid_ids=self.params.vid_ids,
-                                    cat_ids=cat_ids))
+            self.tao_dt.get_ann_ids(
+                vid_ids=self.params.vid_ids, cat_ids=cat_ids))
         if len(gt_anns) == 0:
             raise ValueError(
                 'Found no groundtruth annotations for given params')
@@ -262,10 +263,10 @@ class TaoEval:
         self._prepare()
 
         self.ious = {(vid_id, cat_id): self.compute_iou(vid_id, cat_id)
-                     for vid_id in tqdm(self.params.vid_ids,
-                                        desc='Computing IoUs',
-                                        disable=not show_progress)
-                     for cat_id in cat_ids}
+                     for vid_id in tqdm(
+                         self.params.vid_ids,
+                         desc='Computing IoUs',
+                         disable=not show_progress) for cat_id in cat_ids}
 
         # loop through videos, area range, max detection number
         self.eval_vids = {(v, c, a, t):
@@ -292,13 +293,11 @@ class TaoEval:
             dt = self._dts[vid_id, cat_id]
         else:
             gt = [
-                _track
-                for _cat_id in self.params.cat_ids
+                _track for _cat_id in self.params.cat_ids
                 for _track in self._gts[vid_id, _cat_id]
             ]
             dt = [
-                _track
-                for _cat_id in self.params.cat_ids
+                _track for _cat_id in self.params.cat_ids
                 for _track in self._dts[vid_id, _cat_id]
             ]
         return gt, dt
@@ -361,10 +360,8 @@ class TaoEval:
 
         # load computed ious
         ious = (
-            self.ious[vid_id, cat_id][:, gt_idx]
-            if len(self.ious[vid_id, cat_id]) > 0
-            else self.ious[vid_id, cat_id]
-        )
+            self.ious[vid_id, cat_id][:, gt_idx] if
+            len(self.ious[vid_id, cat_id]) > 0 else self.ious[vid_id, cat_id])
 
         num_thrs = len(self.params.iou_thrs)
         num_gt = len(gt)
@@ -414,12 +411,10 @@ class TaoEval:
         # For Tao we will ignore any unmatched detection if that category was
         # not exhaustively annotated in gt.
         dt_ig_mask = [
-            d["area"] < area_rng[0]
-            or d["area"] > area_rng[1]
+            d["area"] < area_rng[0] or d["area"] > area_rng[1]
             or len(d["annotations"]) < time_rng[0]
             or len(d["annotations"]) > time_rng[1]
-            or d["category_id"] in self.vid_nel[d["video_id"]]
-            for d in dt
+            or d["category_id"] in self.vid_nel[d["video_id"]] for d in dt
         ]
         dt_ig_mask = np.array(dt_ig_mask).reshape((1, num_dt))  # 1 X num_dt
         dt_ig_mask = np.repeat(dt_ig_mask, num_thrs, 0)  # num_thrs X num_dt
@@ -463,8 +458,7 @@ class TaoEval:
 
         # -1 for absent categories
         precision = -np.ones(
-            (num_thrs, num_recalls, num_cats, num_area_rngs, num_time_rngs)
-        )
+            (num_thrs, num_recalls, num_cats, num_area_rngs, num_time_rngs))
         recall = -np.ones((num_thrs, num_cats, num_area_rngs, num_time_rngs))
 
         # Initialize dt_pointers
@@ -543,8 +537,7 @@ class TaoEval:
                         pr[i - 1] = pr[i]
 
                 rec_thrs_insert_idx = np.searchsorted(
-                    rc, self.params.rec_thrs, side="left"
-                )
+                    rc, self.params.rec_thrs, side="left")
 
                 pr_at_recall = [0.0] * num_recalls
 
@@ -557,14 +550,18 @@ class TaoEval:
                     np.array(pr_at_recall))
 
         self.eval = {
-            "params": self.params,
-            "counts": [
-                num_thrs, num_recalls, num_cats, num_area_rngs, num_time_rngs
-            ],
-            "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "precision": precision,
-            "recall": recall,
-            "dt_pointers": dt_pointers,
+            "params":
+            self.params,
+            "counts":
+            [num_thrs, num_recalls, num_cats, num_area_rngs, num_time_rngs],
+            "date":
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "precision":
+            precision,
+            "recall":
+            recall,
+            "dt_pointers":
+            dt_pointers,
         }
 
     def _summarize(self,
@@ -574,13 +571,11 @@ class TaoEval:
                    time_rng="all",
                    freq_group_idx=None):
         aidx = [
-            idx
-            for idx, _area_rng in enumerate(self.params.area_rng_lbl)
+            idx for idx, _area_rng in enumerate(self.params.area_rng_lbl)
             if _area_rng == area_rng
         ]
         time_idx = [
-            idx
-            for idx, _time_rng in enumerate(self.params.time_rng_lbl)
+            idx for idx, _time_rng in enumerate(self.params.time_rng_lbl)
             if _time_rng == time_rng
         ]
 
@@ -651,8 +646,7 @@ class TaoEval:
             " {:<18} {}"
             " @[ IoU={:<9} | area={:>6s} | dur={:>6s} | maxDets={:>3d} "
             "catIds={:>3s}] ="
-            " {:0.3f}"
-        )
+            " {:0.3f}")
 
         for key, value in self.results.items():
             max_dets = self.params.max_dets
@@ -679,16 +673,15 @@ class TaoEval:
                 iou_thr = (float(key[2:]) / 100)
                 iou = "{:0.2f}".format(iou_thr)
             else:
-                iou = "{:0.2f}:{:0.2f}".format(
-                    self.params.iou_thrs[0], self.params.iou_thrs[-1]
-                )
+                iou = "{:0.2f}:{:0.2f}".format(self.params.iou_thrs[0],
+                                               self.params.iou_thrs[-1])
 
             if len(key) > 2 and key[2] in ["r", "c", "f"]:
                 cat_group_name = key[2]
             else:
                 cat_group_name = "all"
 
-            self.logger.info(
+            print(
                 template.format(title, _type, iou, area_rng, time_rng,
                                 max_dets, cat_group_name, value))
 
@@ -699,25 +692,24 @@ class TaoEval:
 
 
 class Params:
+
     def __init__(self, iou_type, iou_3d_type='3d_iou'):
         """Params for Tao evaluation API."""
         self.vid_ids = []
         self.cat_ids = []
         # np.arange causes trouble.  the data point on arange is slightly
         # larger than the true value
-        # self.iou_thrs = np.linspace(
-        #     0.5, 0.95, np.round((0.95 - 0.5) / 0.05) + 1, endpoint=True
-        # )
-        self.iou_thrs = [0.5]
+        self.iou_thrs = np.linspace(
+            0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05) + 1), endpoint=True)
+        # self.iou_thrs = [0.5]
         self.rec_thrs = np.linspace(
-            0.0, 1.00, int(np.round((1.00 - 0.0) / 0.01) + 1), endpoint=True
-        )
+            0.0, 1.00, int(np.round((1.00 - 0.0) / 0.01) + 1), endpoint=True)
         self.max_dets = 300
         self.area_rng = [
-            [0 ** 2, 1e5 ** 2],
-            [0 ** 2, 32 ** 2],
-            [32 ** 2, 96 ** 2],
-            [96 ** 2, 1e5 ** 2],
+            [0**2, 1e5**2],
+            [0**2, 32**2],
+            [32**2, 96**2],
+            [96**2, 1e5**2],
         ]
         self.area_rng_lbl = ["all", "small", "medium", "large"]
         self.time_rng = [[0, 1e5], [0, 3], [3, 10], [10, 1e5]]
