@@ -421,6 +421,7 @@ class TaoEval:
         # Based on dt_ig_mask ignore any unmatched detection by updating dt_ig
         dt_ig = np.logical_or(dt_ig, np.logical_and(dt_m == -1, dt_ig_mask))
         # store results for given video and category
+
         return {
             "video_id": vid_id,
             "category_id": cat_id,
@@ -599,7 +600,27 @@ class TaoEval:
             mean_s = -1
         else:
             mean_s = np.mean(s[s > -1])
-        return mean_s
+
+        if (summary_type == 'ap' and area_rng == "all" and time_rng == "all"
+                and freq_group_idx is None):
+            cls_aps = np.array([-1.0, -1.0, -1.0])
+            cls_ids = np.array(self.params.cat_ids)
+
+            person_ind = cls_ids == 805
+            ap_person = s[:, :, person_ind, :]
+            cls_aps[0] = np.mean(ap_person[ap_person > -1])
+
+            car_ind = cls_ids == 211
+            ap_car = s[:, :, car_ind, :]
+            cls_aps[1] = np.mean(ap_car[ap_car > -1])
+
+            other_inds = (~person_ind) & (~car_ind)
+            ap_other = s[:, :, other_inds, :]
+            cls_aps[2] = np.mean(ap_other[ap_other > -1])
+
+            return mean_s, cls_aps
+        else:
+            return mean_s
 
     def summarize(self):
         """Compute and display summary metrics for evaluation results."""
@@ -608,9 +629,9 @@ class TaoEval:
 
         max_dets = self.params.max_dets
 
-        self.results["AP"] = self._summarize('ap')
-        self.results["AP50"] = self._summarize('ap', iou_thr=0.50)
-        self.results["AP75"] = self._summarize('ap', iou_thr=0.75)
+        self.results["AP"], cls_aps = self._summarize('ap')
+        self.results["AP50"], cls_aps_50 = self._summarize('ap', iou_thr=0.50)
+        self.results["AP75"], cls_aps_75 = self._summarize('ap', iou_thr=0.75)
 
         for area_rng in ["small", "medium", "large"]:
             key = ("AP", "area", area_rng, max_dets)
@@ -634,6 +655,18 @@ class TaoEval:
         for time_rng in ["short", "medium", "long"]:
             key = ("AR", "time", time_rng, max_dets)
             self.results[key] = self._summarize('ar', time_rng=time_rng)
+
+        self.results['AP_P'] = cls_aps[0]
+        self.results['AP50_P'] = cls_aps_50[0]
+        self.results['AP75_P'] = cls_aps_75[0]
+
+        self.results['AP_C'] = cls_aps[1]
+        self.results['AP50_C'] = cls_aps_50[1]
+        self.results['AP75_C'] = cls_aps_75[1]
+
+        self.results['AP_O'] = cls_aps[2]
+        self.results['AP50_O'] = cls_aps_50[2]
+        self.results['AP75_O'] = cls_aps_75[2]
 
     def run(self, show_progress=False):
         """Wrapper function which calculates the results."""
@@ -670,7 +703,7 @@ class TaoEval:
                     raise ValueError('This should not happen')
 
             if len(key) > 2 and key[2].isdigit():
-                iou_thr = (float(key[2:]) / 100)
+                iou_thr = (float(key[2:4]) / 100)
                 iou = "{:0.2f}".format(iou_thr)
             else:
                 iou = "{:0.2f}:{:0.2f}".format(self.params.iou_thrs[0],
@@ -678,6 +711,10 @@ class TaoEval:
 
             if len(key) > 2 and key[2] in ["r", "c", "f"]:
                 cat_group_name = key[2]
+            elif len(key) > 2 and key[-1] in ["P", "C", "O"]:
+                if len(iou) > 4:
+                    print('-' * 102)
+                cat_group_name = key[-1]
             else:
                 cat_group_name = "all"
 
