@@ -54,3 +54,68 @@ python scripts/evaluation/evaluate.py \
 ```
 
 This should report an AP of 11.3.
+
+## Single-object trackers
+
+Here we show how to run single-object trackers from the excellent PySOT tracking
+repository.
+
+### Setup
+
+1. Download and setup the PySOT repository. This code was tested with PySOT at
+    commit
+    [052b96](https://github.com/STVIR/pysot/tree/052b9678a7ed336752f74dc6af31cc00eb004551).
+    Please follow instructions from the PySOT repository for installation.
+2. Ensure `pysot` to your `PYTHONPATH`. You can check that the following import
+   works:
+
+    ```bash
+    python -c 'from pysot.core.config import cfg'
+    ```
+
+### Download model
+
+Download configs and models from the PySOT [model
+zoo](https://github.com/STVIR/pysot/blob/052b9678a7ed336752f74dc6af31cc00eb004551/MODEL_ZOO.md).
+
+### Run tracker
+
+1. Run single-object tracker using the first frame of a track as the init:
+
+```
+python scripts/trackers/single_obj/pysot_trackers.py \
+        --annotations ${TAO_ROOT}/annotations/train.json \
+        --frames-dir ${TAO_ROOT}/train/ \
+        --output-dir /path/to/pysot/output \
+        --config-file /path/to/pysot/repo/experiments/siamrpn_r50_l234_dwxcorr/config.yaml \
+        --model-path /path/to/pysot/model/siamrpn_r50_l234_dwxcorr_model.pth \
+        --gpus 0 1 2 3 \
+        --tasks-per-gpu 2
+```
+
+2. Run tracker with "biggest" init strategy, as in Table 5 of [our
+   paper](https://arxiv.org/pdf/2005.10356.pdf). To do this, you can add the
+   `--init biggest` flag, as shown below:
+
+```
+python scripts/trackers/single_obj/pysot_trackers.py \
+        --annotations ${TAO_ROOT}/annotations/train.json \
+        --frames-dir ${TAO_ROOT}/ \
+        --output-dir /path/to/pysot/output \
+        --config-file /path/to/pysot/repo/experiments/siamrpn_r50_l234_dwxcorr/config.yaml \
+        --model-path /path/to/pysot/model/siamrpn_r50_l234_dwxcorr_model.pth \
+        --gpus 0 1 2 3 \
+        --tasks-per-gpu 2 \
+        --init biggest
+```
+
+### Evaluate
+
+```
+python scripts/evaluation/evaluate.py \
+    $TAO_ROOT/annotations/train.json \
+    /path/to/pysot/output/train/results.json
+```
+
+This should produce an AP of 29.7.
+
