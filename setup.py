@@ -22,7 +22,7 @@ VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'script_utils @ git+https://github.com/achalddave/python-script-utils.git@v0.0.2#egg=script_utils',
+    'script_utils @ git+https://hub.fastgit.xyz/achalddave/python-script-utils.git@v0.0.2#egg=script_utils',
     'moviepy~=0.2', 'scipy', 'natsort', 'tqdm', 'yacs', 'boto3', 'youtube_dl',
     'numba', 'motmetrics'
     # 'requests', 'maya', 'records',
